@@ -1,6 +1,6 @@
 {
   "name": "titancore",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TitanCore is the Core multithread worker that handles Titan Applications",
   "main": "titan-core/index.js",
   "scripts": {
