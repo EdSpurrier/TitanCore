@@ -6,15 +6,17 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "noImplicitAny": false,
-    "outDir": "./dist",
+    "outDir": "./titan-core",
     "rootDir": "./src",
     "sourceMap": true,
     "strict": true,
     "target": "ES2020",
-    "resolveJsonModule": true,
-    "types": []
+    "resolveJsonModule": true
   },
   "include": [
     "src/**/*.ts"
-  ]
+  ],
+  "paths": {
+    "*": ["node_modules/*", "src/types/*"]
+  }
 }

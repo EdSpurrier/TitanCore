@@ -7,7 +7,13 @@ const good = chalk.bold.green;
 const lineBreak = chalk.bold.grey;
 const line = chalk.bold.grey;
 
-export class TitanLog {
+
+const classColor = chalk.hex('#6d3ddb');
+const processComplete = chalk.hex('#3ddbcc');
+const success = chalk.hex('#3ddb45');
+
+
+export class TitanConsole {
 
     debug : boolean = false;
   
@@ -15,11 +21,12 @@ export class TitanLog {
 
 	constructor(options) {
 
-		console.log("TitanLog Loaded:", options);
+		
 
         this.debug = process.env.DEBUG === 'true';
 
         this.log = console.log;
+        this.logProcessComplete(this.constructor.name, 'Constructed');
 	}
 
     lineSpace = () => {
@@ -49,6 +56,10 @@ export class TitanLog {
         this.lineBreak();
         this.log(error('[ERROR]>', output));
         this.lineBreak();
+    }
+
+    logProcessComplete = (processClass, ...output) => {
+        this.log(classColor(processClass), '=>', processComplete(...output), success('[Complete]'));
     }
 
     init = () => {

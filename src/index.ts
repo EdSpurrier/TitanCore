@@ -1,16 +1,25 @@
 import dotenv from 'dotenv'
-import { TitanLog } from './utils/TitanLog.js'
+import { TitanConsole } from './utils/TitanConsole.js'
+import { Meta } from './system/meta/meta'
 
 dotenv.config()
 
-const log = new TitanLog({option: 'hi'});
-log.init();
 
-log.log("Logging Stuff", true);
+export class TitanCore {
+    console     : TitanConsole;
+    meta        : Meta;
+
+    constructor(options) {
+        this.console = new TitanConsole({});
+        this.console.logProcessComplete(this.constructor.name, 'Constructed');
+
+        this.meta = new Meta();
+	}
 
 
+    init = () => {
+        this.console.logProcessComplete(this.constructor.name, 'Initiated');
+    }
+}
 
-log.logError("Oh This Broke...")
 
-
-console.log("TitanCore loaded...");
