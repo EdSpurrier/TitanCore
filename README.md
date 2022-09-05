@@ -1,4 +1,5 @@
 # TitanCore
+The core framework for Titan, TitanModules, TitanApps & TitanAI
 
 ## Naming Conventions
 | | |
