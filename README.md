@@ -9,3 +9,12 @@ The core framework for Titan, TitanModules, TitanApps & TitanAI
 | constant  | UNDER_SCORE |
 | namespace	| snake_case  |
 | | |
+
+
+
+## Environment Variables
+Use `.env` in the root folder for setting the environment files
+
+e.g.
+>`DEBUG=true`\
+
