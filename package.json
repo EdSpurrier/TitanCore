@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsc -w",
     "build": "tsc",
-    "start": "tsc -w"
+    "start": "tsc"
   },
   "repository": {
     "type": "git",
