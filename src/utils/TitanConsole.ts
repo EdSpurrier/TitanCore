@@ -7,7 +7,7 @@ const good = chalk.bold.green;
 const lineBreak = chalk.bold.grey;
 const line = chalk.bold.grey;
 
-
+const actionColor = chalk.hex('#fce803');
 const classColor = chalk.hex('#6d3ddb');
 const processComplete = chalk.hex('#3ddbcc');
 const success = chalk.hex('#3ddb45');
@@ -56,6 +56,10 @@ export class TitanConsole {
         this.lineBreak();
         this.log(error('[ERROR]>', output));
         this.lineBreak();
+    }
+
+    logAction = (...output) => {
+        this.log(actionColor(output));
     }
 
     logProcessComplete = (processClass, ...output) => {

@@ -10,6 +10,7 @@ const warning = chalk_1.default.hex('#FFA500'); // Orange color
 const good = chalk_1.default.bold.green;
 const lineBreak = chalk_1.default.bold.grey;
 const line = chalk_1.default.bold.grey;
+const actionColor = chalk_1.default.hex('#fce803');
 const classColor = chalk_1.default.hex('#6d3ddb');
 const processComplete = chalk_1.default.hex('#3ddbcc');
 const success = chalk_1.default.hex('#3ddb45');
@@ -38,6 +39,9 @@ class TitanConsole {
             this.lineBreak();
             this.log(error('[ERROR]>', output));
             this.lineBreak();
+        };
+        this.logAction = (...output) => {
+            this.log(actionColor(output));
         };
         this.logProcessComplete = (processClass, ...output) => {
             this.log(classColor(processClass), '=>', processComplete(...output), success('[Complete]'));

@@ -1,25 +1,31 @@
 import dotenv from 'dotenv'
-import { TitanConsole } from './utils/TitanConsole.js'
 import { Meta } from './system/meta/meta'
+import { TitanEventManager } from './utils/TitanEventManager.js';
+import { console } from './system/globals'
+import { TitanConsole } from './utils/TitanConsole';
+
 
 dotenv.config()
 
 
 export class TitanCore {
-    console     : TitanConsole;
-    meta        : Meta;
+    meta                    : Meta;
+    eventManager            : TitanEventManager;
+    console                 : TitanConsole;
 
     constructor(options) {
-        this.console = new TitanConsole({});
-        this.console.logProcessComplete(this.constructor.name, 'Constructed');
+        console.logProcessComplete(this.constructor.name, 'Constructed');
 
+        this.console = new TitanConsole({});
         this.meta = new Meta();
+        this.eventManager = new TitanEventManager({});
+
+        this.init();
 	}
 
 
     init = () => {
-        this.console.logProcessComplete(this.constructor.name, 'Initiated');
+        console.logProcessComplete(this.constructor.name, 'Initiated');
     }
 }
-
 

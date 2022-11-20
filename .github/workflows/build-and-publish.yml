@@ -1,0 +1,125 @@
+name: Build & Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Login to GitHub Packages
+        run: |
+          npm set @grumpysailor:registry https://npm.pkg.github.com/
+          npm set //npm.pkg.github.com/:_authToken $GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-2
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate Package Tarball Name
+        run: |
+          echo NPM_PACKAGE_TARBALL_NAME_ELBO=grumpysailor-elbo-$(cat ./packages/elbo/package.json | jq -r .version).tgz >> $GITHUB_ENV
+          echo NPM_PACKAGE_TARBALL_NAME_ELBO_CLI=grumpysailor-elbo-cli-$(cat ./packages/elbo-cli/package.json | jq -r .version).tgz >> $GITHUB_ENV
+          echo NPM_PACKAGE_TARBALL_NAME_ELBO_DETAILS=grumpysailor-elbo-details-$(cat ./packages/elbo-details/package.json | jq -r .version).tgz >> $GITHUB_ENV
+          echo NPM_PACKAGE_TARBALL_NAME_MEMO=grumpysailor-memo-$(cat ./packages/memo/package.json | jq -r .version).tgz >> $GITHUB_ENV
+          echo NPM_PACKAGE_TARBALL_NAME_PERSISTENT=grumpysailor-persistent-$(cat ./packages/persistent/package.json | jq -r .version).tgz >> $GITHUB_ENV
+
+      - name: Get Publish Status
+        run: |
+          node -p "'NPM_IS_PUBLISHED_ELBO=' + $(npm view @grumpysailor/elbo versions --json 2>/dev/null || echo "[]").includes(require('./packages/elbo/package.json').version)" >> $GITHUB_ENV
+          node -p "'NPM_IS_PUBLISHED_ELBO_CLI=' + $(npm view @grumpysailor/elbo-cli versions --json 2>/dev/null || echo "[]").includes(require('./packages/elbo-cli/package.json').version)" >> $GITHUB_ENV
+          node -p "'NPM_IS_PUBLISHED_ELBO_DETAILS=' + $(npm view @grumpysailor/elbo-details versions --json 2>/dev/null || echo "[]").includes(require('./packages/elbo-details/package.json').version)" >> $GITHUB_ENV
+          node -p "'NPM_IS_PUBLISHED_MEMO=' + $(npm view @grumpysailor/memo versions --json 2>/dev/null || echo "[]").includes(require('./packages/memo/package.json').version)" >> $GITHUB_ENV
+          node -p "'NPM_IS_PUBLISHED_PERSISTENT=' + $(npm view @grumpysailor/persistent versions --json 2>/dev/null || echo "[]").includes(require('./packages/persistent/package.json').version)" >> $GITHUB_ENV
+
+          echo AWS_IS_PUBLISHED_ELBO=$(aws s3api head-object --bucket grumpysailor---artifacts --key $NPM_PACKAGE_TARBALL_NAME_ELBO >/dev/null 2>&1 && echo true || echo false) >> $GITHUB_ENV
+          echo AWS_IS_PUBLISHED_ELBO_CLI=$(aws s3api head-object --bucket grumpysailor---artifacts --key $NPM_PACKAGE_TARBALL_NAME_ELBO_CLI >/dev/null 2>&1 && echo true || echo false) >> $GITHUB_ENV
+          echo AWS_IS_PUBLISHED_ELBO_DETAILS=$(aws s3api head-object --bucket grumpysailor---artifacts --key $NPM_PACKAGE_TARBALL_NAME_ELBO_DETAILS >/dev/null 2>&1 && echo true || echo false) >> $GITHUB_ENV
+          echo AWS_IS_PUBLISHED_MEMO=$(aws s3api head-object --bucket grumpysailor---artifacts --key $NPM_PACKAGE_TARBALL_NAME_MEMO >/dev/null 2>&1 && echo true || echo false) >> $GITHUB_ENV
+          echo AWS_IS_PUBLISHED_PERSISTENT=$(aws s3api head-object --bucket grumpysailor---artifacts --key $NPM_PACKAGE_TARBALL_NAME_PERSISTENT >/dev/null 2>&1 && echo true || echo false) >> $GITHUB_ENV
+
+      - name: NPM Publish @grumpysailor/elbo
+        if: ${{ env.NPM_IS_PUBLISHED_ELBO == 'false' }}
+        run: npm --workspace=@grumpysailor/elbo publish
+
+      - name: NPM Publish @grumpysailor/elbo-cli
+        if: ${{ env.NPM_IS_PUBLISHED_ELBO_CLI == 'false' }}
+        run: npm --workspace=@grumpysailor/elbo-cli publish
+
+      - name: NPM Publish @grumpysailor/elbo-details
+        if: ${{ env.NPM_IS_PUBLISHED_ELBO_DETAILS == 'false' }}
+        run: npm --workspace=@grumpysailor/elbo-details publish
+
+      - name: NPM Publish @grumpysailor/memo
+        if: ${{ env.NPM_IS_PUBLISHED_MEMO == 'false' }}
+        run: npm --workspace=@grumpysailor/memo publish
+
+      - name: NPM Publish @grumpysailor/persistent
+        if: ${{ env.NPM_IS_PUBLISHED_PERSISTENT == 'false' }}
+        run: npm --workspace=@grumpysailor/persistent publish
+
+      - name: Login to GitHub Packages
+        run: |
+          npm set @grumpysailor:registry https://npm.pkg.github.com/
+          npm set //npm.pkg.github.com/:_authToken $GRUMPYSAILOR_TOKEN
+        env:
+          GRUMPYSAILOR_TOKEN: ${{ secrets.GRUMPYSAILOR_TOKEN }}
+
+      - name: AWS Publish @grumpysailor/elbo
+        if: ${{ env.AWS_IS_PUBLISHED_ELBO == 'false' }}
+        run: |
+          npm --workspace=@grumpysailor/elbo pack
+          aws s3 cp $NPM_PACKAGE_TARBALL_NAME_ELBO s3://grumpysailor---artifacts/$NPM_PACKAGE_TARBALL_NAME_ELBO
+          echo npm install \"\"\"$(npx @grumpysailor/aws-s3-unlisted-objects grumpysailor---artifacts $NPM_PACKAGE_TARBALL_NAME_ELBO)\"\"\"
+
+      - name: AWS Publish @grumpysailor/elbo-cli
+        if: ${{ env.AWS_IS_PUBLISHED_ELBO_CLI == 'false' }}
+        run: |
+          npm --workspace=@grumpysailor/elbo-cli pack
+          aws s3 cp $NPM_PACKAGE_TARBALL_NAME_ELBO_CLI s3://grumpysailor---artifacts/$NPM_PACKAGE_TARBALL_NAME_ELBO_CLI
+          echo npm install \"\"\"$(npx @grumpysailor/aws-s3-unlisted-objects grumpysailor---artifacts $NPM_PACKAGE_TARBALL_NAME_ELBO_CLI)\"\"\"
+
+      - name: AWS Publish @grumpysailor/elbo-details
+        if: ${{ env.AWS_IS_PUBLISHED_ELBO_DETAILS == 'false' }}
+        run: |
+          npm --workspace=@grumpysailor/elbo-details pack
+          aws s3 cp $NPM_PACKAGE_TARBALL_NAME_ELBO_DETAILS s3://grumpysailor---artifacts/$NPM_PACKAGE_TARBALL_NAME_ELBO_DETAILS
+          echo npm install \"\"\"$(npx @grumpysailor/aws-s3-unlisted-objects grumpysailor---artifacts $NPM_PACKAGE_TARBALL_NAME_ELBO_DETAILS)\"\"\"
+
+      - name: AWS Publish @grumpysailor/memo
+        if: ${{ env.AWS_IS_PUBLISHED_MEMO == 'false' }}
+        run: |
+          npm --workspace=@grumpysailor/memo pack
+          aws s3 cp $NPM_PACKAGE_TARBALL_NAME_MEMO s3://grumpysailor---artifacts/$NPM_PACKAGE_TARBALL_NAME_MEMO
+          echo npm install \"\"\"$(npx @grumpysailor/aws-s3-unlisted-objects grumpysailor---artifacts $NPM_PACKAGE_TARBALL_NAME_MEMO)\"\"\"
+
+      - name: AWS Publish @grumpysailor/persistent
+        if: ${{ env.AWS_IS_PUBLISHED_PERSISTENT == 'false' }}
+        run: |
+          npm --workspace=@grumpysailor/persistent pack
+          aws s3 cp $NPM_PACKAGE_TARBALL_NAME_PERSISTENT s3://grumpysailor---artifacts/$NPM_PACKAGE_TARBALL_NAME_PERSISTENT
+          echo npm install \"\"\"$(npx @grumpysailor/aws-s3-unlisted-objects grumpysailor---artifacts $NPM_PACKAGE_TARBALL_NAME_PERSISTENT)\"\"\"
